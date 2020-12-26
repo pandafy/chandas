@@ -8,10 +8,10 @@ from indic_transliteration import sanscript
 
 def get_graphemes(in_string):
   """ Split a devanAgarI and possibly other strings into graphemes.
-  
+
   Example: assert syllabize.get_graphemes(u"बिक्रममेरोनामहो") == "बि क् र म मे रो ना म हो".split(" ")
-  :param in_string: 
-  :return: 
+  :param in_string:
+  :return:
   """
   break_iterator = PyICU.BreakIterator.createCharacterInstance(PyICU.Locale())
   break_iterator.setText(in_string)
@@ -38,23 +38,26 @@ def begins_with_vowel(in_string):
 
 def get_syllables(in_string):
   """ Split devanAgarI string into syllables. Ignores spaces and punctuation.
-  
+
   syllabize.get_syllables(u"बिक्रममेरोनामहो") == "बिक् र म मे रो ना म हो".split(" ")
-  :param in_string: 
-  :return: 
+  :param in_string:
+  :return:
   """
   # Cannot do \P{Letter} below as it does not match mAtra-s and virAma-s as of 2019.
   # ऀ-़ा-ॣॲ-ॿ
   cleaned_phrase = regex.sub(r"([^ऀ-़ ा-ॣ ॲ-ॿ  ꣠-ꣽ  ᳐-᳹])", "", in_string, flags=regex.UNICODE)
   cleaned_phrase = cleaned_phrase.replace("ॐ", "ओम्")
-  cleaned_phrase = cleaned_phrase.replace(" ", "")
   graphemes = get_graphemes(cleaned_phrase)
   syllables = []
   while len(graphemes) > 0:
     current_syllable = graphemes.pop(0)
-    if len(graphemes) > 0 and regex.fullmatch(r"[ ꣠-ꣽ  ᳐-᳹]", graphemes[0], flags=regex.UNICODE):
+    if len(graphemes) > 0 and regex.fullmatch(r"[꣠-ꣽ᳐-]", graphemes[0], flags=regex.UNICODE):
       current_syllable = current_syllable  + graphemes.pop(0)
-    while len(graphemes) > 0 and not has_vowel(graphemes[0]):
+
+    if current_syllable == ' ':
+      syllables.append(' ')
+      continue
+    while len(graphemes) > 0 and not has_vowel(graphemes[0]) and graphemes[0] != ' ':
       current_syllable = current_syllable  + graphemes.pop(0)
     if is_vyanjanaanta(current_syllable) and len(graphemes) > 0 and begins_with_vowel(graphemes[0]):
       vyanjana = current_syllable[-2:]
@@ -80,4 +83,3 @@ def get_syllable_weight(syllable):
 def to_weight_list(line_in):
   syllables = get_syllables(line_in)
   return [get_syllable_weight(syllable) for syllable in syllables]
-  
