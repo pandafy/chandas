@@ -5,7 +5,7 @@ import string
 import PyICU
 import regex
 from indic_transliteration import sanscript
-
+from .sanskrit_numbers import get_cardinal_number
 def get_graphemes(in_string):
   """ Split a devanAgarI and possibly other strings into graphemes.
 
@@ -43,15 +43,25 @@ def get_syllables(in_string):
   :param in_string:
   :return:
   """
-  # Cannot do \P{Letter} below as it does not match mAtra-s and virAma-s as of 2019.
-  # ऀ-़ा-ॣॲ-ॿ
-  cleaned_phrase = regex.sub(r"([^ऀ-़ ा-ॣ ॲ-ॿ  ꣠-ꣽ  ᳐-᳹])", "", in_string, flags=regex.UNICODE)
+  # Normalize
+  cleaned_phrase = in_string.replace(u"\u0966", "0", ).replace( u"\u0967", "1").replace(u"\u0968","2").replace(u"\u0969", "3",).replace(u"\u096A", "4",).replace(u"\u096B", "5",).replace(u"\u096C", "6",).replace(u"\u096D", "7",).replace(u"\u096E", "8",).replace(u"\u096F", "9",)
+
+  cleaned_phrase = regex.sub(r"([^ऀ-़ ा-ॣ ॲ-ॿ  ꣠-ꣽ  ᳐-᳹])", "", cleaned_phrase, flags=regex.UNICODE)
   cleaned_phrase = cleaned_phrase.replace("ॐ", "ओम्")
-  graphemes = get_graphemes(cleaned_phrase)
+
+  final_phrases = []
+  for phrase in cleaned_phrase.split(' '):
+    try:
+      number = int(phrase)
+    except Exception as e:
+      final_phrases.append(phrase)
+    else:
+      final_phrases.append(get_cardinal_number(number))
+  graphemes = get_graphemes(' '.join(final_phrases))
   syllables = []
   while len(graphemes) > 0:
     current_syllable = graphemes.pop(0)
-    if len(graphemes) > 0 and regex.fullmatch(r"[꣠-ꣽ᳐-]", graphemes[0], flags=regex.UNICODE):
+    if len(graphemes) > 0 and regex.fullmatch(r" ꣠-ꣽ  ᳐-᳹]", graphemes[0], flags=regex.UNICODE):
       current_syllable = current_syllable  + graphemes.pop(0)
 
     if current_syllable == ' ':
